@@ -1,0 +1,17 @@
+{
+    "projectId": "deepgram-transcribe",
+    "projectName": "Deepgram",
+    "functions": [
+        {
+            "$id": "62753b1ac20b91816e01",
+            "name": "transcribe",
+            "runtime": "node-16.0",
+            "path": "functions/transcribe",
+            "entrypoint": "src/index.js",
+            "execute": [],
+            "events": [],
+            "schedule": "",
+            "timeout": 15
+        }
+    ]
+}

@@ -10,27 +10,27 @@ export default function Dashboard({ user }) {
   /**
    * Load audio tracks in useEffect
    */
-  useEffect(async() => {
-    const {documents} = await api.database.listDocuments('audio', [
-      Query.equal('userId', user.$id)
-    ]);
+  useEffect(async () => {
+    if (user) {
+      const { documents } = await api.database.listDocuments('audio', [
+        Query.equal('userId', user.$id),
+      ]);
 
-    setItems(documents);
-  }, []);
+      setItems(documents);
+    }
+  }, [user]);
 
   /**
-   * Subscribe to realtime updates for 
+   * Subscribe to realtime updates for
    * transcribed audio files
    */
   useEffect(() => {
-    const unsubscribe = api.subscribe([''], data => {
-
-    })
+    const unsubscribe = api.subscribe([''], (data) => {});
 
     return () => {
       unsubscribe();
-    }
-  }, [])
+    };
+  }, []);
 
   async function upload(e) {
     e.preventDefault();
@@ -44,18 +44,22 @@ export default function Dashboard({ user }) {
     try {
       const file = e.target.file.files[0];
       const description = e.target.description.value;
-      
-      const uploadedFile = await api.storage.createFile('audio', 'unique()', file);
+
+      const uploadedFile = await api.storage.createFile(
+        'audio',
+        'unique()',
+        file
+      );
       await api.database.createDocument('audio', 'unique()', {
         userId: user.$id,
         fileId: uploadedFile.$id,
         status: 0,
-        description
+        description,
       });
 
       e.target.description.value = '';
       e.target.file.value = '';
-    } catch(e) {
+    } catch (e) {
       console.log(`Error: ${e}`);
     }
   }
@@ -63,16 +67,20 @@ export default function Dashboard({ user }) {
   return (
     <div className="dashboard-container">
       <span className="name">Hello {user ? user.name : ''}</span>
-      <span className="instructions">
-        Please select a file to upload
-      </span>
+      <span className="instructions">Please select a file to upload</span>
       <form className="upload-form" onSubmit={upload}>
         <div>
-          Description: <input type="text" name="description" placeholder="Enter Description" required/>
+          Description:{' '}
+          <input
+            type="text"
+            name="description"
+            placeholder="Enter Description"
+            required
+          />
         </div>
 
         <div>
-          File: <input type="file" name="file" required/>
+          File: <input type="file" name="file" required />
         </div>
         <button type="submit">Upload</button>
       </form>
@@ -83,10 +91,13 @@ export default function Dashboard({ user }) {
             <div key={item['$id']}>
               <div
                 className={
-                  'dashboard-item' + (item['$id'] === selected ? ' selected' : '')
-                }>
+                  'dashboard-item' +
+                  (item['$id'] === selected ? ' selected' : '')
+                }
+              >
                 {item.description}
                 <img src={`https://picsum.photos/seed/${item.$id}/200/200`} />
+                {item.status == 2 ? 'Transcribed' : item.status === 1 ? 'Processing' : 'Uploaded'}
               </div>
             </div>
           );
