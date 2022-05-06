@@ -1,4 +1,5 @@
 const sdk = require("node-appwrite");
+const { Deepgram } = require('@deepgram/sdk');
 
 /*
   'req' variable has:
@@ -18,7 +19,6 @@ module.exports = async function (req, res) {
 
   // You can remove services you don't use
   let database = new sdk.Database(client);
-  let functions = new sdk.Functions(client);
   let storage = new sdk.Storage(client);
 
   if (
@@ -34,6 +34,9 @@ module.exports = async function (req, res) {
       .setSelfSigned(true);
   }
 
+  // deepgram client
+  const deepgram = new Deepgram(req.env['DEEPGRAM_API_KEY']);
+
   // use document data to get file id
   const eventData = JSON.parse(req.env['APPWRITE_FUNCTION_EVENT_DATA']);
 
@@ -44,20 +47,23 @@ module.exports = async function (req, res) {
   });
   
   // get file from storage
+  const fileInfo = await storage.getFile('audio', eventData.fileId);
   const file = await storage.getFileView(eventData.$collection, eventData.fileId);
 
-  setTimeout(async() => {
-    // transcribe file
-    
-    // update document with transcription
-    await database.updateDocument(eventData.$collection, eventData.$id, {
-      ...eventData,
-      status: 2
-    });
-    
-    res.json({
-      success: true
-    });
+  // transcribe file using Deepgram
+  const transcriptData = await deepgram.transcription.preRecorded({
+    stream: file,
+    mimetype: fileInfo.mimeType,
+  });
 
-  }, 3000);
+  // update document with transcription information
+  await database.updateDocument(eventData.$collection, eventData.$id, {
+    ...eventData,
+    transcripts: JSON.stringify(transcriptData),
+    status: 2
+  });
+  
+  res.json({
+    success: true
+  });
 };
