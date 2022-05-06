@@ -4,7 +4,7 @@ import { api } from '../api';
 import './Dashboard.css';
 
 export default function Dashboard({ user }) {
-  const [selected, setSelected] = useState('');
+  const [selected, setSelected] = useState();
   const [items, setItems] = useState([]);
 
   /**
@@ -25,12 +25,48 @@ export default function Dashboard({ user }) {
    * transcribed audio files
    */
   useEffect(() => {
-    const unsubscribe = api.subscribe([''], (data) => {});
+    const unsubscribe = api.subscribe(
+      ['collections.audio.documents'],
+      (data) => {
+        if (data.event === 'database.documents.create') {
+          const item = data.payload;
+
+          setItems((prevItems) => [...prevItems, item]);
+        }
+
+        if (data.event === 'database.documents.update') {
+          const item = data.payload;
+
+          setItems((prevItems) =>
+            prevItems.map((prevItem) =>
+              prevItem.$id === item.$id ? item : prevItem
+            )
+          );
+        }
+      }
+    );
 
     return () => {
       unsubscribe();
     };
   }, []);
+
+  function select(item) {
+    setSelected(item);
+  }
+
+  function getStatus(item) {
+    return item.status == 2 ? (
+      <div>
+        Transcribed
+        <div onClick={() => select(item)}>View</div>
+      </div>
+    ) : item.status === 1 ? (
+      'Processing'
+    ) : (
+      'Uploaded'
+    )
+  }
 
   async function upload(e) {
     e.preventDefault();
@@ -85,6 +121,21 @@ export default function Dashboard({ user }) {
         <button type="submit">Upload</button>
       </form>
 
+      <div>
+        {selected ? (
+          <>
+            <span className="transcript">
+              {
+                JSON.parse(selected.transcripts).results.channels[0]
+                  .alternatives[0].transcript
+              }
+            </span>
+          </>
+        ) : (
+          ''
+        )}
+      </div>      
+
       <div className="dashboard-item-container">
         {items.map((item) => {
           return (
@@ -92,21 +143,17 @@ export default function Dashboard({ user }) {
               <div
                 className={
                   'dashboard-item' +
-                  (item['$id'] === selected ? ' selected' : '')
+                  (selected && item['$id'] === selected.$id ? ' selected' : '')
                 }
               >
                 {item.description}
                 <img src={`https://picsum.photos/seed/${item.$id}/200/200`} />
-                {item.status == 2 ? 'Transcribed' : item.status === 1 ? 'Processing' : 'Uploaded'}
+                {getStatus(item)}
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* <form className="dashboard-form" onSubmit={vote}>
-        <button disabled={!selected} type="submit">Vote</button>
-      </form> */}
     </div>
   );
 }
