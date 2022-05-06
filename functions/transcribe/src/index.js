@@ -1,5 +1,5 @@
 const sdk = require("node-appwrite");
-const { Deepgram } = require('@deepgram/sdk');
+const { Deepgram } = require('../@deepgram/sdk/dist/index.js');
 
 /*
   'req' variable has:

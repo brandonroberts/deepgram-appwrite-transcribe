@@ -9,7 +9,7 @@
             "path": "functions/transcribe",
             "entrypoint": "src/index.js",
             "execute": [],
-            "events": [],
+            "events": ["database.documents.create"],
             "schedule": "",
             "timeout": 15
         }
