@@ -1,14 +1,13 @@
 import { Query } from 'appwrite';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api, mediaCollectionId, storageBucketId } from '../api';
 import './Dashboard.css';
+import DashboardHeader from './DashboardHeader';
 
 export default function Dashboard({ user, setUser }) {
   const [selected, setSelected] = useState();
   const [items, setItems] = useState([]);
   const [processing, setProcessing] = useState(false);
-  const navigate = useNavigate();
 
   /**
    * Load audio tracks in useEffect
@@ -64,17 +63,34 @@ export default function Dashboard({ user, setUser }) {
   }, []);
 
   function select(item) {
-    setSelected(item);
+    if (item !== selected) {
+      setSelected(item);
+    } else {
+      setSelected(null);
+    }
   }
 
+  /**
+   * Get status of transcript processing
+   * 
+   * @param {*} item 
+   * @returns 
+   */
   function getStatus(item) {
-    return item.status == 2
-      ? 'Transcribed'
-      : item.status === 1
-      ? 'Processing'
-      : 'Uploaded';
+    if (item.status === 2) {
+      return 'Transcribed';
+    } else if (item.status === 1) {
+      return 'Processing';
+    } else {
+      return 'Uploaded';
+    }
   }
 
+  /**
+   * Upload audio file to storage
+   * and create a new media document
+   * @param {} e 
+   */
   async function upload(e) {
     e.preventDefault();
 
@@ -110,30 +126,24 @@ export default function Dashboard({ user, setUser }) {
     }
   }
 
+  /**
+   * Get transcript for audio file
+   * @param {} item 
+   * @returns 
+   */
   function getTranscript(item) {
     return JSON.parse(item.transcripts).results.channels[0].alternatives[0]
       .transcript;
   }
 
-  async function logout() {
-    await api.account.deleteSession('current');
-    setUser(null);
-    navigate('/');
-  }
-
   return (
     <div className="dashboard-container">
-      <div className="dashboard-header">
-        <div className="title">{user ? user.name : ''}</div>
-        <div className="leave" onClick={logout}>
-          Logout
-        </div>
-      </div>
+      <DashboardHeader user={user} setUser={setUser} />
 
       <div className="upload-container">
         <form className="upload-form" onSubmit={upload}>
           <div>
-            Description:{' '}
+            Description:
             <input
               className="upload-description"
               type="text"
@@ -195,9 +205,7 @@ export default function Dashboard({ user, setUser }) {
 
       <div className="transcript-container">
         {selected ? (
-          <>
-            <span className="transcript">{getTranscript(selected)}</span>
-          </>
+          <span className="transcript">{getTranscript(selected)}</span>
         ) : (
           ''
         )}
