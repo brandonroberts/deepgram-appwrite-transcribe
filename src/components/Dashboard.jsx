@@ -43,6 +43,14 @@ export default function Dashboard({ user }) {
             )
           );
         }
+
+        if (data.event === 'database.documents.delete') {
+          const item = data.payload;
+
+          setItems((prevItems) =>
+            prevItems.filter((prevItem) => prevItem.$id !== item.$id)
+          );
+        }        
       }
     );
 
