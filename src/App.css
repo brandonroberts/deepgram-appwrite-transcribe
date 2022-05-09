@@ -6,16 +6,20 @@ body {
 
 .app-container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   height: 100vh;
 }
 
-.content {
+.login-content {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  justify-content: center;
+}
+
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 

@@ -1,20 +1,24 @@
 import { Query } from 'appwrite';
 import { useEffect, useState } from 'react';
-import { api } from '../api';
+import { useNavigate } from 'react-router-dom';
+import { api, mediaCollectionId, storageBucketId } from '../api';
 import './Dashboard.css';
 
-export default function Dashboard({ user }) {
+export default function Dashboard({ user, setUser }) {
   const [selected, setSelected] = useState();
   const [items, setItems] = useState([]);
+  const [processing, setProcessing] = useState(false);
+  const navigate = useNavigate();
 
   /**
    * Load audio tracks in useEffect
    */
   useEffect(async () => {
     if (user) {
-      const { documents } = await api.database.listDocuments('audio', [
-        Query.equal('userId', user.$id),
-      ]);
+      const { documents } = await api.database.listDocuments(
+        mediaCollectionId,
+        [Query.equal('userId', user.$id)]
+      );
 
       setItems(documents);
     }
@@ -26,7 +30,7 @@ export default function Dashboard({ user }) {
    */
   useEffect(() => {
     const unsubscribe = api.subscribe(
-      ['collections.audio.documents'],
+      [`collections.${mediaCollectionId}.documents`],
       (data) => {
         if (data.event === 'database.documents.create') {
           const item = data.payload;
@@ -50,7 +54,7 @@ export default function Dashboard({ user }) {
           setItems((prevItems) =>
             prevItems.filter((prevItem) => prevItem.$id !== item.$id)
           );
-        }        
+        }
       }
     );
 
@@ -64,16 +68,11 @@ export default function Dashboard({ user }) {
   }
 
   function getStatus(item) {
-    return item.status == 2 ? (
-      <div>
-        Transcribed
-        <div onClick={() => select(item)}>View</div>
-      </div>
-    ) : item.status === 1 ? (
-      'Processing'
-    ) : (
-      'Uploaded'
-    )
+    return item.status == 2
+      ? 'Transcribed'
+      : item.status === 1
+      ? 'Processing'
+      : 'Uploaded';
   }
 
   async function upload(e) {
@@ -86,15 +85,16 @@ export default function Dashboard({ user }) {
      * with uploaded status of 0
      */
     try {
+      setProcessing(true);
       const file = e.target.file.files[0];
       const description = e.target.description.value;
 
       const uploadedFile = await api.storage.createFile(
-        'audio',
+        storageBucketId,
         'unique()',
         file
       );
-      await api.database.createDocument('audio', 'unique()', {
+      await api.database.createDocument(mediaCollectionId, 'unique()', {
         userId: user.$id,
         fileId: uploadedFile.$id,
         status: 0,
@@ -105,62 +105,102 @@ export default function Dashboard({ user }) {
       e.target.file.value = '';
     } catch (e) {
       console.log(`Error: ${e}`);
+    } finally {
+      setProcessing(false);
     }
+  }
+
+  function getTranscript(item) {
+    return JSON.parse(item.transcripts).results.channels[0].alternatives[0]
+      .transcript;
+  }
+
+  async function logout() {
+    await api.account.deleteSession('current');
+    setUser(null);
+    navigate('/');
   }
 
   return (
     <div className="dashboard-container">
-      <span className="name">Hello {user ? user.name : ''}</span>
-      <span className="instructions">Please select a file to upload</span>
-      <form className="upload-form" onSubmit={upload}>
-        <div>
-          Description:{' '}
-          <input
-            type="text"
-            name="description"
-            placeholder="Enter Description"
-            required
-          />
+      <div className="dashboard-header">
+        <div className="title">{user ? user.name : ''}</div>
+        <div className="leave" onClick={logout}>
+          Logout
         </div>
+      </div>
 
-        <div>
-          File: <input type="file" name="file" required />
-        </div>
-        <button type="submit">Upload</button>
-      </form>
+      <div className="upload-container">
+        <form className="upload-form" onSubmit={upload}>
+          <div>
+            Description:{' '}
+            <input
+              className="upload-description"
+              type="text"
+              name="description"
+              placeholder="Enter Description"
+              required
+            />
+          </div>
 
-      <div>
+          <div>
+            File: <input className="file" type="file" name="file" required />
+          </div>
+
+          <div className="upload-button">
+            <button disabled={processing} type="submit">
+              Upload
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="dashboard-item-container">
+        <table className="collection">
+          <thead>
+            <tr>
+              <th className="description">Description</th>
+              <th className="status">Status</th>
+              <th className="action">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => {
+              return (
+                <tr key={item['$id']}>
+                  <td
+                    className={
+                      'dashboard-item' +
+                      (selected && item['$id'] === selected.$id
+                        ? ' selected'
+                        : '')
+                    }
+                  >
+                    {item.description}
+                  </td>
+                  <td>{getStatus(item)}</td>
+                  <td>
+                    {item.status === 2 ? (
+                      <div onClick={() => select(item)}>View</div>
+                    ) : (
+                      ''
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="transcript-container">
         {selected ? (
           <>
-            <span className="transcript">
-              {
-                JSON.parse(selected.transcripts).results.channels[0]
-                  .alternatives[0].transcript
-              }
-            </span>
+            <span className="transcript">{getTranscript(selected)}</span>
           </>
         ) : (
           ''
         )}
-      </div>      
-
-      <div className="dashboard-item-container">
-        {items.map((item) => {
-          return (
-            <div key={item['$id']}>
-              <div
-                className={
-                  'dashboard-item' +
-                  (selected && item['$id'] === selected.$id ? ' selected' : '')
-                }
-              >
-                {item.description}
-                <img src={`https://picsum.photos/seed/${item.$id}/200/200`} />
-                {getStatus(item)}
-              </div>
-            </div>
-          );
-        })}
       </div>
     </div>
   );

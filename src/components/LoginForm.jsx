@@ -8,14 +8,15 @@ export default function LoginForm({ setUser }) {
   async function login(e) {
     e.preventDefault();
     try {
-        const session = await api.account.createAnonymousSession();
-        setUser(session);
+        await api.account.createAnonymousSession();
         if (e.target.name.value) {
           await api.account.updateName(e.target.name.value);
         }
       } catch(e) {
         
       } finally {
+        const user = await api.account.get();
+        setUser(user);
         navigate('/dashboard');
     }
   }

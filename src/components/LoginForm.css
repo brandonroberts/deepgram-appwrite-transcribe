@@ -3,6 +3,7 @@
   padding: 24px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
 
   background: #ffffff;
   border: 1px solid rgba(232, 233, 240, 0.5);

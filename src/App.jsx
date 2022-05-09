@@ -20,9 +20,8 @@ function App() {
         path="dashboard"
         element={
           <div className="app-container">
-            <div className="content">
-              {/* { user ? <Dashboard user={user} /> : '' } */}
-              <Dashboard user={user} />
+            <div className="dashboard-content">
+              { user ? <Dashboard user={user} setUser={setUser} /> : '' }
             </div>
           </div>
         }
@@ -31,7 +30,7 @@ function App() {
         path="/"
         element={
           <div className="app-container">
-            <div className="content">
+            <div className="login-content">
               <span className="title">Deepgram + Appwrite</span>
               <span className="subtitle">Audio Archives</span>
               <LoginForm setUser={setUser} />
