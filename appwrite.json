@@ -3,17 +3,6 @@
   "projectName": "Deepgram",
   "functions": [
     {
-      "$id": "62753b1ac20b91816e01",
-      "name": "transcribe",
-      "runtime": "node-16.0",
-      "path": "functions/transcribe",
-      "entrypoint": "src/index.js",
-      "execute": [],
-      "events": ["database.documents.create"],
-      "schedule": "",
-      "timeout": 15
-    },
-    {
       "$id": "627584a268077585323f",
       "name": "transcribe-py",
       "runtime": "python-3.9",
