@@ -1,6 +1,5 @@
 import { Query } from 'appwrite';
 import { useEffect, useState } from 'react';
-import { api, mediaCollectionId, storageBucketId } from '../api';
 import './Dashboard.css';
 import DashboardHeader from './DashboardHeader';
 
@@ -13,14 +12,7 @@ export default function Dashboard({ user, setUser }) {
    * Load audio tracks in useEffect
    */
   useEffect(async () => {
-    if (user) {
-      const { documents } = await api.database.listDocuments(
-        mediaCollectionId,
-        [Query.equal('userId', user.$id)]
-      );
 
-      setItems(documents);
-    }
   }, [user]);
 
   /**
@@ -28,38 +20,7 @@ export default function Dashboard({ user, setUser }) {
    * transcribed audio files
    */
   useEffect(() => {
-    const unsubscribe = api.subscribe(
-      [`collections.${mediaCollectionId}.documents`],
-      (data) => {
-        if (data.event === 'database.documents.create') {
-          const item = data.payload;
 
-          setItems((prevItems) => [...prevItems, item]);
-        }
-
-        if (data.event === 'database.documents.update') {
-          const item = data.payload;
-
-          setItems((prevItems) =>
-            prevItems.map((prevItem) =>
-              prevItem.$id === item.$id ? item : prevItem
-            )
-          );
-        }
-
-        if (data.event === 'database.documents.delete') {
-          const item = data.payload;
-
-          setItems((prevItems) =>
-            prevItems.filter((prevItem) => prevItem.$id !== item.$id)
-          );
-        }
-      }
-    );
-
-    return () => {
-      unsubscribe();
-    };
   }, []);
 
   function select(item) {
@@ -105,18 +66,6 @@ export default function Dashboard({ user, setUser }) {
       const file = e.target.file.files[0];
       const description = e.target.description.value;
 
-      const uploadedFile = await api.storage.createFile(
-        storageBucketId,
-        'unique()',
-        file
-      );
-      await api.database.createDocument(mediaCollectionId, 'unique()', {
-        userId: user.$id,
-        fileId: uploadedFile.$id,
-        status: 0,
-        description,
-      });
-
       e.target.description.value = '';
       e.target.file.value = '';
     } catch (e) {
@@ -132,8 +81,7 @@ export default function Dashboard({ user, setUser }) {
    * @returns 
    */
   function getTranscript(item) {
-    return JSON.parse(item.transcripts).results.channels[0].alternatives[0]
-      .transcript;
+    return '';
   }
 
   return (
