@@ -49,8 +49,8 @@ def main(req, res):
   result = database.update_document(event_data['$collection'], event_data['$id'], doc)
 
   # get file from storage
-  file_info = storage.get_file('audio', event_data['fileId'])
-  file = storage.get_file_view(event_data['$collection'], event_data['fileId'])
+  file_info = storage.get_file('6272ac5d58a1fa5600fb', event_data['fileId'])
+  file = storage.get_file_view('6272ac5d58a1fa5600fb', event_data['fileId'])
 
   # transcribe file using Deepgram
   response = asyncio.run(dg_client.transcription.prerecorded({
